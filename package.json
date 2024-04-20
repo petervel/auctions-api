@@ -14,10 +14,13 @@
 	"dependencies": {
 		"dotenv": "^16.4.5",
 		"express": "^4.19.2",
+		"html-entities": "^2.5.2",
+		"latinize": "^2.0.0",
 		"mysql2": "^3.9.4"
 	},
 	"devDependencies": {
 		"@types/express": "^4.17.21",
+		"@types/latinize": "^0.2.18",
 		"@types/node": "^20.12.7",
 		"concurrently": "^8.2.2",
 		"nodemon": "^3.1.0",

@@ -4,11 +4,14 @@ dotenv.config();
 import express from 'express';
 const app = express();
 
-import events from './events';
-app.use('/events', events);
+import routes from "./api";
+import { updateData } from "./importer/util/updateData";
 
-import auctions from "./auctions";
-app.use("/auctions", auctions);
+for (const route of routes) {
+	app.use(route.path, route.object);
+}
+
+app.use("/update", updateData);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
