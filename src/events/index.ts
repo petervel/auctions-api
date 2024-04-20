@@ -6,7 +6,7 @@ const router = express.Router();
 router.get('/', (_, res) => {
 	db.query("select name from events", (error, results, fields) => {
 		if (error) throw error;
-		res.json({ response: results, "sddddtatus": 200 });
+		res.json({ response: results, "status": 200 });
 	});
 });
 
