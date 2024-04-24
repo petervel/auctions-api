@@ -1,5 +1,9 @@
-// import { XMLParser } from "fast-xml-parser";
-// import got from "got";
+import { XMLParser } from "fast-xml-parser";
+import got from "got";
+import { GeekListProcessor } from "importer/processors/GeekListProcessor";
+import { GeekList } from "model/GeekList";
+import { ListItem } from "model/ListItem";
+import { Fair } from "model/fair";
 
 // import { AuctionItemProcessor } from "./processors/AuctionItemProcessor";
 // import { AuctionListProcessor } from "./processors/AuctionListProcessor";
@@ -7,55 +11,72 @@
 // import { AuctionItem } from "../../data-model/auction-item";
 // import { Auction } from "../../data-model/auction";
 
-// export type AuctionData = {
-// 	list: AuctionList,
-// 	items: AuctionItem[];
-// };
-// export type ProcessingResultEnum = "success" | "not_ready" | "failed";
+export type FairData = {
+	list: GeekList;
+	items: ListItem[];
+};
+export type ProcessingResultEnum = "success" | "not_ready" | "failed";
 
-// export async function getAuctionDataFromBgg(auction: Auction): Promise<AuctionData | ProcessingResultEnum> {
-// 	console.info(`${auction.id}: Fetching XML...`);
-// 	const xmlString = await getXml(auction);
+export async function getAuctionDataFromBgg(
+	fair: Fair
+): Promise<FairData | ProcessingResultEnum> {
+	console.info(`${fair.id}: Fetching XML...`);
+	const xmlString = await getXml(fair);
 
-// 	console.info(`${auction.id}: Parsing XML...`);
-// 	const data = parseXml(xmlString, auction.id);
-// 	if (typeof data == "string") return data;
+	console.info(`${fair.id}: Parsing XML...`);
+	const data = parseXml(xmlString, fair.id);
+	if (typeof data == "string") return data;
 
-// 	console.info(`${auction.id}: Loading auction list object...`);
-// 	const list = AuctionListProcessor.fromBggObject(data);
+	console.info(`${fair.id}: Loading auction list object...`);
+	const list = GeekListProcessor.fromBggObject(data);
 
-// 	console.info(`${auction.id}: Loading items...`);
-// 	const itemsArray = Array.isArray(data["item"]) ? data["item"] : [data["item"]];
-// 	const items: AuctionItem[] = [];
-// 	for (const itemObject of itemsArray) {
-// 		items.push(AuctionItemProcessor.fromBggObject(itemObject));
-// 	}
+	// console.info(`${fair.id}: Loading items...`);
+	// const itemsArray = Array.isArray(data["item"])
+	// 	? data["item"]
+	// 	: [data["item"]];
+	const items: ListItem[] = [];
+	// for (const itemObject of itemsArray) {
+	// 	items.push(AuctionItemProcessor.fromBggObject(itemObject));
+	// }
 
-// 	return { list, items };
-// }
+	return { list, items };
+}
 
-// async function getXml(auction: Auction): Promise<string> {
-// 	return await got(`https://boardgamegeek.com/xmlapi/geeklist/${auction.id}?comments=1`, { resolveBodyOnly: true });
-// }
+async function getXml(auction: Fair): Promise<string> {
+	return await got(
+		`https://boardgamegeek.com/xmlapi/geeklist/${auction.id}?comments=1`,
+		{ resolveBodyOnly: true }
+	);
+}
 
-// type DataObject = Record<string, any>;
+type DataObject = Record<string, any>;
 
-// function parseXml(xmlString: string, auctionId: number): DataObject | "not_ready" | "failed" {
-// 	const parser = new XMLParser({
-// 		ignoreAttributes: false,
-// 		attributeNamePrefix: "@_",
-// 	});
-// 	const obj = parser.parse(xmlString);
-// 	console.info(`${auctionId}: Completed XML parse.`);
+function parseXml(
+	xmlString: string,
+	auctionId: number
+): DataObject | "not_ready" | "failed" {
+	const parser = new XMLParser({
+		ignoreAttributes: false,
+		attributeNamePrefix: "@_",
+	});
+	const obj = parser.parse(xmlString);
+	console.info(`${auctionId}: Completed XML parse.`);
 
-// 	if (obj["message"]) {
-// 		console.log(`${auctionId}: Geeklist not ready, message from BGG: ${obj["message"]}`);
-// 		return "not_ready";
-// 	}
+	if (obj["message"]) {
+		console.log(
+			`${auctionId}: Geeklist not ready, message from BGG: ${obj["message"]}`
+		);
+		return "not_ready";
+	}
 
-// 	if (!obj["geeklist"]) {
-// 		console.warn(`${auctionId}: Unexpected response: ${JSON.stringify(obj).substring(0, 500)}`);
-// 		return "failed";
-// 	}
-// 	return obj["geeklist"];
-// }
+	if (!obj["geeklist"]) {
+		console.warn(
+			`${auctionId}: Unexpected response: ${JSON.stringify(obj).substring(
+				0,
+				500
+			)}`
+		);
+		return "failed";
+	}
+	return obj["geeklist"];
+}
