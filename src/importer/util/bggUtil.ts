@@ -29,18 +29,7 @@ export async function getAuctionDataFromBgg(
 
 	console.info(`${fair.id}: Loading auction list object...`);
 	const list = GeekListProcessor.fromBggObject(data);
-
-	console.log("done");
-
-	console.log(list.items[0]);
-	// console.info(`${fair.id}: Loading items...`);
-	// const itemsArray = Array.isArray(data["item"])
-	// 	? data["item"]
-	// 	: [data["item"]];
-	// const items: ListItem[] = [];
-	// for (const itemObject of itemsArray) {
-	// 	items.push(AuctionItemProcessor.fromBggObject(itemObject));
-	// }
+	console.log("done.");
 
 	return list;
 }

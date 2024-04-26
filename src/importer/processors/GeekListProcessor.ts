@@ -21,9 +21,13 @@ export class GeekListProcessor {
 		const commentEdits = comments.map((comment) => comment.edit_timestamp);
 		editTimestamp = Math.max(editTimestamp, ...commentEdits);
 
-		const items = source["item"]?.map(ListItemProcessor.fromBggObject);
+		const itemsArray = !source["item"]
+			? []
+			: Array.isArray(source["item"])
+			? source["item"]
+			: [source["item"]];
 
-		console.log();
+		const items = itemsArray.map(ListItemProcessor.fromBggObject);
 
 		const list: GeekList = {
 			id: Number(source["@_id"]),
