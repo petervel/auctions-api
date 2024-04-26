@@ -1,8 +1,8 @@
-import db from "db";
 import { decode } from "html-entities";
-import { CommentProcessor } from "./CommentProcessor";
 import { Comment } from "model/Comment";
 import { GeekList } from "model/GeekList";
+import { CommentProcessor } from "./CommentProcessor";
+import { ListItemProcessor } from "./ListItemProcessor";
 
 export class GeekListProcessor {
 	public static fromBggObject(source: Record<string, any>): GeekList {
@@ -21,6 +21,10 @@ export class GeekListProcessor {
 		const commentEdits = comments.map((comment) => comment.edit_timestamp);
 		editTimestamp = Math.max(editTimestamp, ...commentEdits);
 
+		const items = source["item"]?.map(ListItemProcessor.fromBggObject);
+
+		console.log();
+
 		const list: GeekList = {
 			id: Number(source["@_id"]),
 			title: decode(source["title"]),
@@ -33,7 +37,8 @@ export class GeekListProcessor {
 			item_count: Number(source["numitems"]),
 			description: decode(source["description"]),
 			tos_url: source["@_termsofuse"],
-			comments: comments,
+			comments,
+			items,
 		};
 
 		return list;

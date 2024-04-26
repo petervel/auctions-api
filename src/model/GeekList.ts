@@ -1,4 +1,5 @@
 import { Comment } from "./Comment";
+import { ListItem } from "./ListItem";
 
 export interface GeekList {
 	id: number;
@@ -13,4 +14,6 @@ export interface GeekList {
 	description: string;
 	tos_url: string;
 	comments: Comment[];
+
+	items: ListItem[];
 }

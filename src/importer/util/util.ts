@@ -1,6 +1,9 @@
 import latinize from "latinize";
 
-export function extractString(source: string, regex: RegExp): string | undefined {
+export function extractString(
+	source: string,
+	regex: RegExp
+): string | undefined {
 	const matches = source.match(regex);
 	if (matches != null && matches.length > 0) {
 		return matches.pop() as string;
@@ -8,7 +11,10 @@ export function extractString(source: string, regex: RegExp): string | undefined
 	return undefined; // not found
 }
 
-export function extractNumber(source: string, regex: RegExp): number | undefined {
+export function extractNumber(
+	source: string,
+	regex: RegExp
+): number | undefined {
 	const value = extractString(source, regex);
 	return value != undefined ? Number(value) : undefined;
 }
@@ -38,7 +44,7 @@ function removeBetweenTags(text: string, tag: string): string {
 	while (middleText == undefined) {
 		counter++;
 		if (counter > 50) {
-			console.log("Forcing break from remove tag loop: \"" + originalText + "\"");
+			console.log('Forcing break from remove tag loop: "' + originalText + '"');
 			middleText = "";
 			break;
 		}
@@ -71,11 +77,14 @@ export function parseEndDateString(end: string | null | undefined) {
 
 	const result1 = end.match(/^([^,]*),?/);
 	end = result1 != null ? result1[1] : end;
-	end = end.replace(/\bokt/ig, "oct"); // German/Dutch spelling
+	end = end.replace(/\bokt/gi, "oct"); // German/Dutch spelling
 
-	end = end.replace(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b\s+/ig, "");
+	end = end.replace(
+		/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|mon|tue|wed|thu|fri|sat|sun)\b\s+/gi,
+		""
+	);
 
-	end = end.replace(/(,?\s*random time\.?)?/ig, "");
+	end = end.replace(/(,?\s*random time\.?)?/gi, "");
 
 	if (!end.endsWith("2022")) {
 		end += " 2022";
@@ -91,7 +100,7 @@ export function parseEndDateString(end: string | null | undefined) {
 
 export function formatTimeToDate(time?: number) {
 	if (time == undefined) {
-		time = (new Date()).getTime();
+		time = new Date().getTime();
 	}
 	const d = new Date(time);
 	const yearText = `${d.getFullYear()}`;
@@ -116,7 +125,7 @@ export function stripObjectName(text: string): string {
 	const latin = latinize(lower);
 	const stripped = latin.replace(/^(([^\da-z])|(the )|(an? ))*/i, "");
 	const result = stripped.replace(/[^\da-z]$/i, "");
-	return (result.length > 0) ? result : lower;
+	return result.length > 0 ? result : lower;
 }
 
 export function stripUndefined(obj: Record<string, any>): Record<string, any> {
@@ -129,7 +138,9 @@ export const allSettledWithRetries = async (
 	waitBetweenRetries = 500
 ) => {
 	const results = await Promise.allSettled(promises);
-	const successResponses = results.filter((result) => result.status == "fulfilled");
+	const successResponses = results.filter(
+		(result) => result.status == "fulfilled"
+	);
 
 	if (retries == 0 || successResponses.length == promises.length) {
 		return successResponses;
@@ -142,11 +153,16 @@ export const allSettledWithRetries = async (
 		}
 	});
 
-	console.warn(`Failed to fulfill ${failedPromises.length} promises. Will try again.`);
+	console.warn(
+		`Failed to fulfill ${failedPromises.length} promises. Will try again.`
+	);
 
 	await new Promise((resolve) => setTimeout(resolve, waitBetweenRetries));
 
-	const failedResults = await allSettledWithRetries(failedPromises, retries - 1);
+	const failedResults = await allSettledWithRetries(
+		failedPromises,
+		retries - 1
+	);
 
 	failedResults.forEach((promiseResult) => {
 		if (promiseResult.status == "fulfilled") {

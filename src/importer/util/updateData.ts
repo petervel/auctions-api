@@ -1,4 +1,3 @@
-import { GeekListProcessor } from "importer/processors/GeekListProcessor";
 import { Fair } from "../../model/fair";
 import { getAuctionDataFromBgg } from "./bggUtil";
 
@@ -23,7 +22,7 @@ export const updateData = async () => {
 };
 
 const processFair = async (fair: Fair) => {
-	const data = getAuctionDataFromBgg(fair);
+	const data = await getAuctionDataFromBgg(fair);
 
-	console.log(data);
+	// console.log(data);
 };

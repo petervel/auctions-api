@@ -1,9 +1,9 @@
+import axios from "axios";
 import { XMLParser } from "fast-xml-parser";
-import got from "got";
-import { GeekListProcessor } from "importer/processors/GeekListProcessor";
 import { GeekList } from "model/GeekList";
 import { ListItem } from "model/ListItem";
 import { Fair } from "model/fair";
+import { GeekListProcessor } from "../../importer/processors/GeekListProcessor";
 
 // import { AuctionItemProcessor } from "./processors/AuctionItemProcessor";
 // import { AuctionListProcessor } from "./processors/AuctionListProcessor";
@@ -19,8 +19,8 @@ export type ProcessingResultEnum = "success" | "not_ready" | "failed";
 
 export async function getAuctionDataFromBgg(
 	fair: Fair
-): Promise<FairData | ProcessingResultEnum> {
-	console.info(`${fair.id}: Fetching XML...`);
+): Promise<GeekList | "not_ready" | "failed"> {
+	console.info(`${fair.id}: Fetching XML... ${fair.geeklist_id}`);
 	const xmlString = await getXml(fair);
 
 	console.info(`${fair.id}: Parsing XML...`);
@@ -30,23 +30,26 @@ export async function getAuctionDataFromBgg(
 	console.info(`${fair.id}: Loading auction list object...`);
 	const list = GeekListProcessor.fromBggObject(data);
 
+	console.log("done");
+
+	console.log(list.items[0]);
 	// console.info(`${fair.id}: Loading items...`);
 	// const itemsArray = Array.isArray(data["item"])
 	// 	? data["item"]
 	// 	: [data["item"]];
-	const items: ListItem[] = [];
+	// const items: ListItem[] = [];
 	// for (const itemObject of itemsArray) {
 	// 	items.push(AuctionItemProcessor.fromBggObject(itemObject));
 	// }
 
-	return { list, items };
+	return list;
 }
 
-async function getXml(auction: Fair): Promise<string> {
-	return await got(
-		`https://boardgamegeek.com/xmlapi/geeklist/${auction.id}?comments=1`,
-		{ resolveBodyOnly: true }
+async function getXml(fair: Fair) {
+	const { data } = await axios.get(
+		`https://boardgamegeek.com/xmlapi/geeklist/${fair.geeklist_id}?comments=1`
 	);
+	return data;
 }
 
 type DataObject = Record<string, any>;

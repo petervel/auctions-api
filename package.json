@@ -12,12 +12,12 @@
 	"author": "Peter Vel",
 	"license": "ISC",
 	"dependencies": {
+		"axios": "^1.6.8",
 		"dotenv": "^16.4.5",
 		"express": "^4.19.2",
 		"fast-xml-parser": "^4.3.6",
-		"got": "12.6.1",
 		"html-entities": "^2.5.2",
-		"latinize": "^2.0.0",
+		"latinize": "1",
 		"mysql2": "^3.9.4"
 	},
 	"devDependencies": {
