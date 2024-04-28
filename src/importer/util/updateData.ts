@@ -1,4 +1,4 @@
-import { Fair } from "../../model/fair";
+import { Fair } from "../../model/Fair";
 import { getAuctionDataFromBgg } from "./bggUtil";
 
 export const updateData = async () => {
@@ -24,5 +24,10 @@ export const updateData = async () => {
 const processFair = async (fair: Fair) => {
 	const data = await getAuctionDataFromBgg(fair);
 
-	// console.log(data);
+	if (typeof data === "string") {
+		console.log("Unsuccesful: " + data);
+		return;
+	}
+
+	data.save();
 };

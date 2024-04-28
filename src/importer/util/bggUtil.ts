@@ -1,8 +1,8 @@
 import axios from "axios";
 import { XMLParser } from "fast-xml-parser";
+import { Fair } from "model/Fair";
 import { GeekList } from "model/GeekList";
 import { ListItem } from "model/ListItem";
-import { Fair } from "model/fair";
 import { GeekListProcessor } from "../../importer/processors/GeekListProcessor";
 
 // import { AuctionItemProcessor } from "./processors/AuctionItemProcessor";

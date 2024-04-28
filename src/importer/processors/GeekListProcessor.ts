@@ -1,19 +1,21 @@
 import { decode } from "html-entities";
-import { Comment } from "model/Comment";
-import { GeekList } from "model/GeekList";
-import { CommentProcessor } from "./CommentProcessor";
+import { ListComment } from "model/Comment";
+import { GeekList } from "../../model/GeekList";
+import { ListCommentProcessor } from "./CommentProcessor";
 import { ListItemProcessor } from "./ListItemProcessor";
 
 export class GeekListProcessor {
 	public static fromBggObject(source: Record<string, any>): GeekList {
-		let comments: Comment[] = [];
+		const listId = Number(source["@_id"]);
+
+		let comments: ListComment[] = [];
 		if (source["comment"]) {
 			const commentsData = Array.isArray(source["comment"])
 				? source["comment"]
 				: [source["comment"]];
 
 			comments = commentsData.map((commentData) =>
-				CommentProcessor.fromBggObject(commentData)
+				ListCommentProcessor.fromBggObject(listId, commentData)
 			);
 		}
 
@@ -29,21 +31,21 @@ export class GeekListProcessor {
 
 		const items = itemsArray.map(ListItemProcessor.fromBggObject);
 
-		const list: GeekList = {
-			id: Number(source["@_id"]),
-			title: decode(source["title"]),
-			username: decode(source["username"]),
-			post_date: source["postdate"],
-			post_timestamp: Number(source["postdate_timestamp"]),
-			edit_date: source["editdate"],
-			edit_timestamp: editTimestamp,
-			thumbs: Number(source["thumbs"]),
-			item_count: Number(source["numitems"]),
-			description: decode(source["description"]),
-			tos_url: source["@_termsofuse"],
+		const list: GeekList = new GeekList(
+			listId,
+			decode(source["title"]),
+			decode(source["username"]),
+			source["postdate"],
+			Number(source["postdate_timestamp"]),
+			source["editdate"],
+			editTimestamp,
+			Number(source["thumbs"]),
+			Number(source["numitems"]),
+			decode(source["description"]),
+			source["@_termsofuse"],
 			comments,
-			items,
-		};
+			items
+		);
 
 		return list;
 	}

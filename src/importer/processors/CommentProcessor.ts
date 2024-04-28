@@ -1,31 +1,50 @@
 import { decode } from "html-entities";
-import { extractString, removeStrikethrough, removeQuoted } from "../util/util";
-import { Comment, ItemComment } from "model/Comment";
+import { ItemComment, ListComment } from "../../model/Comment";
+import { extractString, removeQuoted, removeStrikethrough } from "../util/util";
 
-export class CommentProcessor {
-	public static fromBggObject(source: Record<string, any>): Comment {
-		return {
-			username: decode(source["@_username"]),
-			date: source["@_date"],
-			post_date: source["@_postdate"],
-			edit_date: source["@_editdate"],
-			edit_timestamp: Number(Date.parse(source["@_editdate"])),
-			thumbs: Number(source["@_thumbs"]),
-			text: decode(`${source["#text"]}`), // force this to be a string, for parsing purposes.
-		};
+export class ListCommentProcessor {
+	public static fromBggObject(listId: number, source: Record<string, any>) {
+		return new ListComment(
+			listId,
+			decode(source["@_username"]),
+			source["@_date"],
+			source["@_postdate"],
+			source["@_editdate"],
+			Math.floor(Date.parse(source["@_editdate"]) / 1000),
+			Number(source["@_thumbs"]),
+			decode(`${source["#text"]}`) // force this to be a string, for parsing purposes.
+		);
 	}
 }
 
-export class ItemCommentProcessor extends CommentProcessor {
-	public static fromBggObject(source: Record<string, any>): ItemComment {
-		const obj = CommentProcessor.fromBggObject(source) as ItemComment;
-		if (obj.text.length != 0) {
-			let stripped = removeStrikethrough(obj.text);
+export class ItemCommentProcessor {
+	public static fromBggObject(
+		itemId: number,
+		source: Record<string, any>
+	): ItemComment {
+		const text = decode(`${source["#text"]}`); // force this to be a string, for parsing purposes.
+
+		let is_bin = false;
+		let bid = undefined;
+		if (text.length != 0) {
+			let stripped = removeStrikethrough(text);
 			stripped = removeQuoted(stripped);
-			obj.is_bin = !!extractString(stripped, /\b(bin)\b/i);
-			obj.bid = ItemCommentProcessor.findBidNumber(stripped);
+			is_bin = !!extractString(stripped, /\b(bin)\b/i);
+			bid = ItemCommentProcessor.findBidNumber(stripped);
 		}
-		return obj;
+
+		return new ItemComment(
+			itemId,
+			decode(source["@_username"]),
+			source["@_date"],
+			source["@_postdate"],
+			source["@_editdate"],
+			Number(Math.floor(Date.parse(source["@_editdate"]) / 1000)),
+			Number(source["@_thumbs"]),
+			text,
+			is_bin,
+			bid
+		);
 	}
 
 	private static findBidNumber(text: string): number | undefined {

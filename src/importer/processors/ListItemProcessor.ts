@@ -27,18 +27,20 @@ export class ListItemProcessor {
 	// }
 
 	public static fromBggObject(source: Record<string, any>): ListItem {
+		const itemId = Number(source["@_id"]);
+
 		let comments: ItemComment[] = [];
 		if (source["comment"]) {
 			const commentsData = Array.isArray(source["comment"])
 				? source["comment"]
 				: [source["comment"]];
 			comments = commentsData.map((commentData) =>
-				ItemCommentProcessor.fromBggObject(commentData)
+				ItemCommentProcessor.fromBggObject(itemId, commentData)
 			);
 		}
 
 		let item: ListItem = {
-			id: Number(source["@_id"]),
+			id: itemId,
 			object_type: source["@_objecttype"],
 			object_subtype: source["@_subtype"],
 			object_id: Number(source["@_objectid"]),
