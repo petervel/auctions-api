@@ -1,42 +1,29 @@
+import { Fair, List } from "@prisma/client";
 import axios from "axios";
 import { XMLParser } from "fast-xml-parser";
-import { Fair } from "model/Fair";
-import { GeekList } from "model/GeekList";
-import { ListItem } from "model/ListItem";
 import { GeekListProcessor } from "../../importer/processors/GeekListProcessor";
+import { Result, err, ok } from "./result";
 
-// import { AuctionItemProcessor } from "./processors/AuctionItemProcessor";
-// import { AuctionListProcessor } from "./processors/AuctionListProcessor";
-// import { AuctionList } from "../../data-model/auction-list";
-// import { AuctionItem } from "../../data-model/auction-item";
-// import { Auction } from "../../data-model/auction";
-
-export type FairData = {
-	list: GeekList;
-	items: ListItem[];
-};
-export type ProcessingResultEnum = "success" | "not_ready" | "failed";
-
-export async function getAuctionDataFromBgg(
-	fair: Fair
-): Promise<GeekList | "not_ready" | "failed"> {
-	console.info(`${fair.id}: Fetching XML... ${fair.geeklist_id}`);
-	const xmlString = await getXml(fair);
+export async function update(fair: Fair): Promise<Result<List, String>> {
+	console.info(`${fair.id}: Fetching XML... ${fair.listId}`);
+	const xmlString = await getXml(fair.listId);
 
 	console.info(`${fair.id}: Parsing XML...`);
-	const data = parseXml(xmlString, fair.id);
-	if (typeof data == "string") return data;
+	const parseResult = parseXml(fair.id, xmlString);
+	if (parseResult.isErr()) return parseResult;
+	const object = parseResult.value;
 
 	console.info(`${fair.id}: Loading auction list object...`);
-	const list = GeekListProcessor.fromBggObject(data);
+	const updateResult = await GeekListProcessor.update(fair.id, object);
+	if (updateResult.isErr()) return updateResult;
 	console.log("done.");
 
-	return list;
+	return ok(updateResult.value);
 }
 
-async function getXml(fair: Fair) {
+async function getXml(listId: number) {
 	const { data } = await axios.get(
-		`https://boardgamegeek.com/xmlapi/geeklist/${fair.geeklist_id}?comments=1`
+		`https://boardgamegeek.com/xmlapi/geeklist/${listId}?comments=1`
 	);
 	return data;
 }
@@ -44,31 +31,28 @@ async function getXml(fair: Fair) {
 type DataObject = Record<string, any>;
 
 function parseXml(
-	xmlString: string,
-	auctionId: number
-): DataObject | "not_ready" | "failed" {
+	fairId: number,
+	xmlString: string
+): Result<DataObject, String> {
 	const parser = new XMLParser({
 		ignoreAttributes: false,
 		attributeNamePrefix: "@_",
 	});
 	const obj = parser.parse(xmlString);
-	console.info(`${auctionId}: Completed XML parse.`);
+	console.info(`${fairId}: Completed XML parse.`);
 
 	if (obj["message"]) {
 		console.log(
-			`${auctionId}: Geeklist not ready, message from BGG: ${obj["message"]}`
+			`${fairId}: Geeklist not ready, message from BGG: ${obj["message"]}`
 		);
-		return "not_ready";
+		return err("not_ready");
 	}
 
 	if (!obj["geeklist"]) {
 		console.warn(
-			`${auctionId}: Unexpected response: ${JSON.stringify(obj).substring(
-				0,
-				500
-			)}`
+			`${fairId}: Unexpected response: ${JSON.stringify(obj).substring(0, 500)}`
 		);
-		return "failed";
+		return err("failed");
 	}
 	return obj["geeklist"];
 }

@@ -1,33 +1,31 @@
-import { Fair } from "../../model/Fair";
-import { getAuctionDataFromBgg } from "./bggUtil";
+import prisma from "../../prismaClient";
+import { update } from "./bggUtil";
 
 export const updateData = async () => {
-	console.log("update data");
-	const fairs = await Fair.all();
+	console.log("Update data");
+	const fairs = (await prisma.fair.findMany()).filter((fair) => {
+		if (!fair.listId) {
+			console.log(`Skipping fair ${fair.id} without list.`);
+			return false;
+		}
+		return true;
+	});
+
 	console.log(fairs);
 
-	// const promises = [];
 	for (const fair of fairs) {
-		// promises.push(checkAuction(fair));
-
 		switch (fair.status) {
-			case "active":
-				processFair(fair);
+			case "ACTIVE":
+				const result = await update(fair);
+
+				if (result.isErr()) {
+					console.log(
+						`Processing fair ${fair.id} unsuccesful: ${result.error}`
+					);
+				}
 				break;
-			case "archived":
+			case "ARCHIVED":
 				break;
 		}
 	}
-	// await allSettledWithRetries(promises);
-};
-
-const processFair = async (fair: Fair) => {
-	const data = await getAuctionDataFromBgg(fair);
-
-	if (typeof data === "string") {
-		console.log("Unsuccesful: " + data);
-		return;
-	}
-
-	data.save();
 };

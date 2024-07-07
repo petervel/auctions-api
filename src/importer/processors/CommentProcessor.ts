@@ -1,27 +1,36 @@
+import { ItemComment, ListComment } from "@prisma/client";
 import { decode } from "html-entities";
-import { ItemComment, ListComment } from "../../model/Comment";
+import prisma from "../../prismaClient";
+import { Result, ok } from "../util/result";
 import { extractString, removeQuoted, removeStrikethrough } from "../util/util";
 
 export class ListCommentProcessor {
-	public static fromBggObject(listId: number, source: Record<string, any>) {
-		return new ListComment(
-			listId,
-			decode(source["@_username"]),
-			source["@_date"],
-			source["@_postdate"],
-			source["@_editdate"],
-			Math.floor(Date.parse(source["@_editdate"]) / 1000),
-			Number(source["@_thumbs"]),
-			decode(`${source["#text"]}`) // force this to be a string, for parsing purposes.
-		);
+	public static async update(
+		listId: number,
+		source: Record<string, any>
+	): Promise<Result<ListComment, String>> {
+		const comment = await prisma.listComment.create({
+			data: {
+				listId,
+				username: decode(source["@_username"]),
+				date: source["@_date"],
+				postDate: source["@_postdate"],
+				editDate: source["@_editdate"],
+				editTimestamp: Math.floor(Date.parse(source["@_editdate"]) / 1000),
+				thumbs: Number(source["@_thumbs"]),
+				text: decode(`${source["#text"]}`), // force this to be a string, for parsing purposes.
+			},
+		});
+
+		return ok(comment);
 	}
 }
 
 export class ItemCommentProcessor {
-	public static fromBggObject(
+	public static async update(
 		itemId: number,
 		source: Record<string, any>
-	): ItemComment {
+	): Promise<Result<ItemComment, String>> {
 		const text = decode(`${source["#text"]}`); // force this to be a string, for parsing purposes.
 
 		let is_bin = false;
@@ -33,18 +42,24 @@ export class ItemCommentProcessor {
 			bid = ItemCommentProcessor.findBidNumber(stripped);
 		}
 
-		return new ItemComment(
-			itemId,
-			decode(source["@_username"]),
-			source["@_date"],
-			source["@_postdate"],
-			source["@_editdate"],
-			Number(Math.floor(Date.parse(source["@_editdate"]) / 1000)),
-			Number(source["@_thumbs"]),
-			text,
-			is_bin,
-			bid
-		);
+		const comment = await prisma.itemComment.create({
+			data: {
+				itemId: itemId,
+				username: decode(source["@_username"]),
+				date: source["@_date"],
+				postDate: source["@_postdate"],
+				editDate: source["@_editdate"],
+				editTimestamp: Number(
+					Math.floor(Date.parse(source["@_editdate"]) / 1000)
+				),
+				thumbs: Number(source["@_thumbs"]),
+				text: text,
+				isBin: is_bin,
+				bid: bid,
+			},
+		});
+
+		return ok(comment);
 	}
 
 	private static findBidNumber(text: string): number | undefined {
