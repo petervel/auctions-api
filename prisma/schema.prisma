@@ -14,17 +14,18 @@ datasource db {
 }
 
 model Fair {
-  id     Int        @id @default(autoincrement())
-  name   String     @unique
-  status FairStatus @default(ACTIVE)
-  list   List       @relation(fields: [listId], references: [id])
-  listId Int        @unique
+  id         Int        @id @default(autoincrement())
+  name       String     @unique
+  status     FairStatus @default(ACTIVE)
+  geeklistId Int
+  list       List?      @relation(fields: [listId], references: [id])
+  listId     Int?       @unique
 }
 
 model List {
-  id   Int   @id
-  fair Fair?
-
+  id            Int           @id @default(autoincrement())
+  fair          Fair?
+  geeklistId    Int
   title         String
   username      String
   postDate      DateTime
@@ -40,7 +41,8 @@ model List {
 }
 
 model Item {
-  id     Int  @id
+  id     Int  @id @default(autoincrement())
+  bggId			Int
   list   List @relation(fields: [listId], references: [id])
   listId Int
 
@@ -55,7 +57,7 @@ model Item {
   thumbs   Int
   imageId  Int
 
-  body String
+  body String @db.Text
 
   deleted  Boolean       @default(false)
   comments ItemComment[]

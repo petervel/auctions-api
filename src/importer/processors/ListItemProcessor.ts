@@ -1,15 +1,14 @@
 import { Item, ItemComment } from "@prisma/client";
 import { decode } from "html-entities";
 import prisma from "../../prismaClient";
-import { Result } from "../util/result";
+import { Result, ok } from "../util/result";
 import {
 	extractNumber,
 	extractString,
 	parseEndDateString,
 	removeStrikethrough,
 } from "../util/util";
-import { ok } from "./../util/result";
-import { ItemCommentProcessor } from "./CommentProcessor";
+import { ItemCommentProcessor } from "./ItemCommentProcessor";
 
 export class ListItemProcessor {
 	public static async update(
@@ -17,6 +16,26 @@ export class ListItemProcessor {
 		source: Record<string, any>
 	): Promise<Result<Item, String>> {
 		const itemId = Number(source["@_id"]);
+
+		const item: Item = await prisma.item.create({
+			data: {
+				bggId: itemId,
+				listId: listId,
+				objectType: source["@_objecttype"],
+				objectSubtype: source["@_subtype"],
+				objectId: Number(source["@_objectid"]),
+				objectName: decode(source["@_objectname"]),
+				username: decode(source["@_username"]),
+				postDate: new Date(source["@_postdate"]),
+				editDate: new Date(source["@_editdate"]),
+				thumbs: Number(source["@_thumbs"]),
+				imageId: Number(source["@_imageid"]),
+				body: decode(source["body"]),
+				// comments: { connect: { id: itemId } },
+				deleted: false,
+				...this.getDerivedData(removeStrikethrough(source["body"])),
+			},
+		});
 
 		let comments: ItemComment[] = [];
 		if (source["comment"]) {
@@ -26,7 +45,7 @@ export class ListItemProcessor {
 			const results = await Promise.all(
 				commentsData.map(
 					async (commentData) =>
-						await ItemCommentProcessor.update(itemId, commentData)
+						await ItemCommentProcessor.update(item.id, commentData)
 				)
 			);
 			for (const result of results) {
@@ -38,26 +57,6 @@ export class ListItemProcessor {
 				}
 			}
 		}
-
-		const item: Item = await prisma.item.create({
-			data: {
-				id: itemId,
-				listId: listId,
-				objectType: source["@_objecttype"],
-				objectSubtype: source["@_subtype"],
-				objectId: Number(source["@_objectid"]),
-				objectName: decode(source["@_objectname"]),
-				username: decode(source["@_username"]),
-				postDate: source["@_postdate"],
-				editDate: source["@_editdate"],
-				thumbs: Number(source["@_thumbs"]),
-				imageId: Number(source["@_imageid"]),
-				body: decode(source["body"]),
-				comments: { connect: { id: itemId } },
-				deleted: false,
-				...this.getDerivedData(removeStrikethrough(source["body"])),
-			},
-		});
 
 		return ok(item);
 	}
@@ -111,9 +110,10 @@ export class ListItemProcessor {
 		}
 
 		const editTimestamp = Date.parse(item.editDate);
-		const commentEdits = item.comments.map(
-			(comment: ItemComment) => comment.editTimestamp
-		);
+		const commentEdits = [0];
+		// item.comments.map(
+		// 	(comment: ItemComment) => comment.editTimestamp
+		// );
 		const latest = Math.max(editTimestamp, ...commentEdits);
 		item.editTimestamp = latest;
 

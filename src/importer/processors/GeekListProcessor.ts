@@ -1,17 +1,60 @@
-import { Item, List, ListComment } from "@prisma/client";
+import { Fair, Item, List, ListComment } from "@prisma/client";
 import { decode } from "html-entities";
 import prisma from "../../prismaClient";
 import { Result, ok } from "../util/result";
-import { ListCommentProcessor } from "./CommentProcessor";
+import { ListCommentProcessor } from "./ListCommentProcessor";
 import { ListItemProcessor } from "./ListItemProcessor";
 
 export class GeekListProcessor {
 	public static async update(
-		fairId: number,
+		fair: Fair,
 		source: Record<string, any>
 	): Promise<Result<List, String>> {
 		const listId = Number(source["@_id"]);
 
+		let editTimestamp = Number(source["editdate_timestamp"]);
+		const commentEdits = [0]; //comments.map((comment) => comment.editTimestamp);
+		editTimestamp = Math.max(editTimestamp, ...commentEdits);
+
+		const list: List = await prisma.list.create({
+			data: {
+				geeklistId: listId,
+				fair: { connect: { id: fair.id } },
+				title: decode(source["title"]),
+				username: decode(source["username"]),
+				postDate: new Date(source["postdate"]),
+				postTimestamp: Number(source["postdate_timestamp"]),
+				editDate: new Date(source["editdate"]),
+				editTimestamp,
+				thumbs: Number(source["thumbs"]),
+				itemCount: Number(source["numitems"]),
+				description: decode(source["description"]),
+				tosUrl: source["@_termsofuse"],
+				// comments: { connect: { id: listId } },
+				// items: { connect: { id: listId } },
+			},
+		});
+
+		const itemsArray = !source["item"]
+			? []
+			: Array.isArray(source["item"])
+			? source["item"]
+			: [source["item"]];
+
+		const itemResults = await Promise.all(
+			itemsArray.map(
+				async (itemData) => await ListItemProcessor.update(list.id, itemData)
+			)
+		);
+		const items: Item[] = [];
+		for (const result of itemResults) {
+			if (result.isOk()) {
+				items.push(result.value);
+			} else {
+				console.log(`Problem parsing comment: ${result.error}`);
+				return result;
+			}
+		}
 		let comments: ListComment[] = [];
 		if (source["comment"]) {
 			const commentsData = Array.isArray(source["comment"])
@@ -21,7 +64,7 @@ export class GeekListProcessor {
 			const results = await Promise.all(
 				commentsData.map(
 					async (commentData) =>
-						await ListCommentProcessor.update(listId, commentData)
+						await ListCommentProcessor.update(list.id, commentData)
 				)
 			);
 
@@ -34,52 +77,6 @@ export class GeekListProcessor {
 				}
 			}
 		}
-
-		let editTimestamp = Number(source["editdate_timestamp"]);
-		const commentEdits = comments.map((comment) => comment.editTimestamp);
-		editTimestamp = Math.max(editTimestamp, ...commentEdits);
-
-		const itemsArray = !source["item"]
-			? []
-			: Array.isArray(source["item"])
-			? source["item"]
-			: [source["item"]];
-
-		// TODO
-		const itemResults = await Promise.all(
-			itemsArray.map(
-				async (itemData) => await ListItemProcessor.update(listId, itemData)
-			)
-		);
-
-		const items: Item[] = [];
-		for (const result of itemResults) {
-			if (result.isOk()) {
-				items.push(result.value);
-			} else {
-				console.log(`Problem parsing comment: ${result.error}`);
-				return result;
-			}
-		}
-
-		const list: List = await prisma.list.create({
-			data: {
-				id: listId,
-				fair: { connect: { id: fairId } },
-				title: decode(source["title"]),
-				username: decode(source["username"]),
-				postDate: source["postdate"],
-				postTimestamp: Number(source["postdate_timestamp"]),
-				editDate: source["editdate"],
-				editTimestamp,
-				thumbs: Number(source["thumbs"]),
-				itemCount: Number(source["numitems"]),
-				description: decode(source["description"]),
-				tosUrl: source["@_termsofuse"],
-				comments: { connect: { id: listId } },
-				items: { connect: { id: listId } },
-			},
-		});
 
 		return ok(list);
 	}

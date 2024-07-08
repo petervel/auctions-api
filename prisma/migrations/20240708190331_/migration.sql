@@ -3,15 +3,18 @@ CREATE TABLE `Fair` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
     `name` VARCHAR(191) NOT NULL,
     `status` ENUM('ACTIVE', 'ARCHIVED') NOT NULL DEFAULT 'ACTIVE',
+    `geeklistId` INTEGER NOT NULL,
+    `listId` INTEGER NULL,
 
     UNIQUE INDEX `Fair_name_key`(`name`),
+    UNIQUE INDEX `Fair_listId_key`(`listId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `List` (
-    `id` INTEGER NOT NULL,
-    `fairId` INTEGER NOT NULL,
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `geeklistId` INTEGER NOT NULL,
     `title` VARCHAR(191) NOT NULL,
     `username` VARCHAR(191) NOT NULL,
     `postDate` DATETIME(3) NOT NULL,
@@ -23,13 +26,13 @@ CREATE TABLE `List` (
     `description` VARCHAR(191) NOT NULL,
     `tosUrl` VARCHAR(191) NOT NULL,
 
-    UNIQUE INDEX `List_fairId_key`(`fairId`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `ListItem` (
-    `id` INTEGER NOT NULL,
+CREATE TABLE `Item` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `bggId` INTEGER NOT NULL,
     `listId` INTEGER NOT NULL,
     `objectType` VARCHAR(191) NOT NULL,
     `objectSubtype` VARCHAR(191) NOT NULL,
@@ -40,7 +43,7 @@ CREATE TABLE `ListItem` (
     `editDate` DATETIME(3) NOT NULL,
     `thumbs` INTEGER NOT NULL,
     `imageId` INTEGER NOT NULL,
-    `body` VARCHAR(191) NOT NULL,
+    `body` TEXT NOT NULL,
     `deleted` BOOLEAN NOT NULL DEFAULT false,
     `language` VARCHAR(191) NULL,
     `condition` VARCHAR(191) NULL,
@@ -75,7 +78,7 @@ CREATE TABLE `ListComment` (
 -- CreateTable
 CREATE TABLE `ItemComment` (
     `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `listId` INTEGER NOT NULL,
+    `itemId` INTEGER NOT NULL,
     `username` VARCHAR(191) NOT NULL,
     `date` VARCHAR(191) NOT NULL,
     `postDate` DATETIME(3) NOT NULL,
@@ -90,13 +93,13 @@ CREATE TABLE `ItemComment` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `List` ADD CONSTRAINT `List_fairId_fkey` FOREIGN KEY (`fairId`) REFERENCES `Fair`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `Fair` ADD CONSTRAINT `Fair_listId_fkey` FOREIGN KEY (`listId`) REFERENCES `List`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `ListItem` ADD CONSTRAINT `ListItem_listId_fkey` FOREIGN KEY (`listId`) REFERENCES `List`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `Item` ADD CONSTRAINT `Item_listId_fkey` FOREIGN KEY (`listId`) REFERENCES `List`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `ListComment` ADD CONSTRAINT `ListComment_listId_fkey` FOREIGN KEY (`listId`) REFERENCES `List`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `ItemComment` ADD CONSTRAINT `ItemComment_listId_fkey` FOREIGN KEY (`listId`) REFERENCES `ListItem`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE `ItemComment` ADD CONSTRAINT `ItemComment_itemId_fkey` FOREIGN KEY (`itemId`) REFERENCES `Item`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -5,8 +5,8 @@ import { GeekListProcessor } from "../../importer/processors/GeekListProcessor";
 import { Result, err, ok } from "./result";
 
 export async function update(fair: Fair): Promise<Result<List, String>> {
-	console.info(`${fair.id}: Fetching XML... ${fair.listId}`);
-	const xmlString = await getXml(fair.listId);
+	console.info(`${fair.id}: Fetching XML... ${fair.geeklistId}`);
+	const xmlString = await getXml(fair.geeklistId);
 
 	console.info(`${fair.id}: Parsing XML...`);
 	const parseResult = parseXml(fair.id, xmlString);
@@ -14,7 +14,7 @@ export async function update(fair: Fair): Promise<Result<List, String>> {
 	const object = parseResult.value;
 
 	console.info(`${fair.id}: Loading auction list object...`);
-	const updateResult = await GeekListProcessor.update(fair.id, object);
+	const updateResult = await GeekListProcessor.update(fair, object);
 	if (updateResult.isErr()) return updateResult;
 	console.log("done.");
 
@@ -22,9 +22,9 @@ export async function update(fair: Fair): Promise<Result<List, String>> {
 }
 
 async function getXml(listId: number) {
-	const { data } = await axios.get(
-		`https://boardgamegeek.com/xmlapi/geeklist/${listId}?comments=1`
-	);
+	const url = `https://boardgamegeek.com/xmlapi/geeklist/${listId}?comments=1`;
+	console.info(`fetching xml from ${url}`);
+	const { data } = await axios.get(url);
 	return data;
 }
 
@@ -54,5 +54,5 @@ function parseXml(
 		);
 		return err("failed");
 	}
-	return obj["geeklist"];
+	return ok(obj["geeklist"]);
 }
