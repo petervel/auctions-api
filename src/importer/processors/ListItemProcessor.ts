@@ -17,24 +17,32 @@ export class ListItemProcessor {
 	): Promise<Result<Item, String>> {
 		const itemId = Number(source["@_id"]);
 
-		const item: Item = await prisma.item.create({
-			data: {
-				bggId: itemId,
-				listId: listId,
-				objectType: source["@_objecttype"],
-				objectSubtype: source["@_subtype"],
-				objectId: Number(source["@_objectid"]),
-				objectName: decode(source["@_objectname"]),
-				username: decode(source["@_username"]),
-				postDate: new Date(source["@_postdate"]),
-				editDate: new Date(source["@_editdate"]),
-				thumbs: Number(source["@_thumbs"]),
-				imageId: Number(source["@_imageid"]),
-				body: decode(source["body"]),
-				// comments: { connect: { id: itemId } },
-				deleted: false,
-				...this.getDerivedData(removeStrikethrough(source["body"])),
-			},
+		const derivedData = this.getDerivedData(
+			removeStrikethrough(source["body"])
+		);
+
+		const itemData = {
+			id: itemId,
+			listId: listId,
+			objectType: source["@_objecttype"],
+			objectSubtype: source["@_subtype"],
+			objectId: Number(source["@_objectid"]),
+			objectName: decode(source["@_objectname"]),
+			username: decode(source["@_username"]),
+			postDate: new Date(source["@_postdate"]),
+			editDate: new Date(source["@_editdate"]),
+			thumbs: Number(source["@_thumbs"]),
+			imageId: Number(source["@_imageid"]),
+			body: decode(source["body"]),
+			// comments: { connect: { id: itemId } },
+			deleted: false,
+			...derivedData,
+		};
+
+		const item: Item = await prisma.item.upsert({
+			where: { id: itemId },
+			update: itemData,
+			create: itemData,
 		});
 
 		let comments: ItemComment[] = [];

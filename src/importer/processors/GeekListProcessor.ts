@@ -16,23 +16,27 @@ export class GeekListProcessor {
 		const commentEdits = [0]; //comments.map((comment) => comment.editTimestamp);
 		editTimestamp = Math.max(editTimestamp, ...commentEdits);
 
-		const list: List = await prisma.list.create({
-			data: {
-				geeklistId: listId,
-				fair: { connect: { id: fair.id } },
-				title: decode(source["title"]),
-				username: decode(source["username"]),
-				postDate: new Date(source["postdate"]),
-				postTimestamp: Number(source["postdate_timestamp"]),
-				editDate: new Date(source["editdate"]),
-				editTimestamp,
-				thumbs: Number(source["thumbs"]),
-				itemCount: Number(source["numitems"]),
-				description: decode(source["description"]),
-				tosUrl: source["@_termsofuse"],
-				// comments: { connect: { id: listId } },
-				// items: { connect: { id: listId } },
-			},
+		const listData = {
+			id: listId,
+			fair: { connect: { id: fair.id } },
+			title: decode(source["title"]),
+			username: decode(source["username"]),
+			postDate: new Date(source["postdate"]),
+			postTimestamp: Number(source["postdate_timestamp"]),
+			editDate: new Date(source["editdate"]),
+			editTimestamp,
+			thumbs: Number(source["thumbs"]),
+			itemCount: Number(source["numitems"]),
+			description: decode(source["description"]),
+			tosUrl: source["@_termsofuse"],
+			// comments: { connect: { id: listId } },
+			// items: { connect: { id: listId } },
+		};
+
+		const list: List = await prisma.list.upsert({
+			where: { id: listId },
+			create: listData,
+			update: listData,
 		});
 
 		const itemsArray = !source["item"]

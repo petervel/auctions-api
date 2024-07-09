@@ -16,9 +16,13 @@ export async function update(fair: Fair): Promise<Result<List, String>> {
 	console.info(`${fair.id}: Loading auction list object...`);
 	const updateResult = await GeekListProcessor.update(fair, object);
 	if (updateResult.isErr()) return updateResult;
+
+	const list = updateResult.value;
+	fair.listId = list.id;
+
 	console.log("done.");
 
-	return ok(updateResult.value);
+	return ok(list);
 }
 
 async function getXml(listId: number) {

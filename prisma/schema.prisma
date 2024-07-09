@@ -23,9 +23,8 @@ model Fair {
 }
 
 model List {
-  id            Int           @id @default(autoincrement())
+  id            Int           @unique
   fair          Fair?
-  geeklistId    Int
   title         String
   username      String
   postDate      DateTime
@@ -34,22 +33,21 @@ model List {
   editTimestamp Int
   thumbs        Int
   itemCount     Int
-  description   String
+  description   String        @db.Text
   tosUrl        String
   comments      ListComment[]
   items         Item[]
 }
 
 model Item {
-  id     Int  @id @default(autoincrement())
-  bggId			Int
+  id     Int  @unique
   list   List @relation(fields: [listId], references: [id])
   listId Int
 
   objectType    String
   objectSubtype String
   objectId      Int
-  objectName    String
+  objectName    String @db.Text
 
   username String
   postDate DateTime
@@ -63,8 +61,8 @@ model Item {
   comments ItemComment[]
 
   // Derived data
-  language  String?
-  condition String?
+  language  String? @db.Text
+  condition String? @db.Text
 
   startingBid Int?
   softReserve Int?
@@ -73,8 +71,8 @@ model Item {
 
   highestBid Int?
 
-  auctionEnd     String?
-  auctionEndDate String?
+  auctionEnd     String? @db.Text
+  auctionEndDate String? @db.Text
 
   editTimestamp Int?
 
@@ -91,7 +89,7 @@ model ListComment {
   editDate      DateTime
   editTimestamp Int
   thumbs        Int      @default(0)
-  text          String
+  text          String   @db.Text
 }
 
 model ItemComment {
@@ -104,7 +102,7 @@ model ItemComment {
   editDate      DateTime
   editTimestamp Int
   thumbs        Int      @default(0)
-  text          String
+  text          String   @db.Text
   isBin         Boolean  @default(false)
   bid           Int?
 }

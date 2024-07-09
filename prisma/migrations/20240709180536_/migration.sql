@@ -13,8 +13,7 @@ CREATE TABLE `Fair` (
 
 -- CreateTable
 CREATE TABLE `List` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `geeklistId` INTEGER NOT NULL,
+    `id` INTEGER NOT NULL,
     `title` VARCHAR(191) NOT NULL,
     `username` VARCHAR(191) NOT NULL,
     `postDate` DATETIME(3) NOT NULL,
@@ -23,21 +22,20 @@ CREATE TABLE `List` (
     `editTimestamp` INTEGER NOT NULL,
     `thumbs` INTEGER NOT NULL,
     `itemCount` INTEGER NOT NULL,
-    `description` VARCHAR(191) NOT NULL,
+    `description` TEXT NOT NULL,
     `tosUrl` VARCHAR(191) NOT NULL,
 
-    PRIMARY KEY (`id`)
+    UNIQUE INDEX `List_id_key`(`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
 CREATE TABLE `Item` (
-    `id` INTEGER NOT NULL AUTO_INCREMENT,
-    `bggId` INTEGER NOT NULL,
+    `id` INTEGER NOT NULL,
     `listId` INTEGER NOT NULL,
     `objectType` VARCHAR(191) NOT NULL,
     `objectSubtype` VARCHAR(191) NOT NULL,
     `objectId` INTEGER NOT NULL,
-    `objectName` VARCHAR(191) NOT NULL,
+    `objectName` TEXT NOT NULL,
     `username` VARCHAR(191) NOT NULL,
     `postDate` DATETIME(3) NOT NULL,
     `editDate` DATETIME(3) NOT NULL,
@@ -45,19 +43,19 @@ CREATE TABLE `Item` (
     `imageId` INTEGER NOT NULL,
     `body` TEXT NOT NULL,
     `deleted` BOOLEAN NOT NULL DEFAULT false,
-    `language` VARCHAR(191) NULL,
-    `condition` VARCHAR(191) NULL,
+    `language` TEXT NULL,
+    `condition` TEXT NULL,
     `startingBid` INTEGER NULL,
     `softReserve` INTEGER NULL,
     `hardReserve` INTEGER NULL,
     `binPrice` INTEGER NULL,
     `highestBid` INTEGER NULL,
-    `auctionEnd` VARCHAR(191) NULL,
-    `auctionEndDate` VARCHAR(191) NULL,
+    `auctionEnd` TEXT NULL,
+    `auctionEndDate` TEXT NULL,
     `editTimestamp` INTEGER NULL,
     `lastSeen` INTEGER NULL,
 
-    PRIMARY KEY (`id`)
+    UNIQUE INDEX `Item_id_key`(`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
@@ -70,7 +68,7 @@ CREATE TABLE `ListComment` (
     `editDate` DATETIME(3) NOT NULL,
     `editTimestamp` INTEGER NOT NULL,
     `thumbs` INTEGER NOT NULL DEFAULT 0,
-    `text` VARCHAR(191) NOT NULL,
+    `text` TEXT NOT NULL,
 
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -85,7 +83,7 @@ CREATE TABLE `ItemComment` (
     `editDate` DATETIME(3) NOT NULL,
     `editTimestamp` INTEGER NOT NULL,
     `thumbs` INTEGER NOT NULL DEFAULT 0,
-    `text` VARCHAR(191) NOT NULL,
+    `text` TEXT NOT NULL,
     `isBin` BOOLEAN NOT NULL DEFAULT false,
     `bid` INTEGER NULL,
 
