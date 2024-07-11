@@ -14,7 +14,7 @@ export async function update(fair: Fair): Promise<Result<List, String>> {
 	const object = parseResult.value;
 
 	console.info(`${fair.id}: Loading auction list object...`);
-	const updateResult = await GeekListProcessor.update(fair, object);
+	const updateResult = await GeekListProcessor.update(fair.id, object);
 	if (updateResult.isErr()) return updateResult;
 
 	const list = updateResult.value;

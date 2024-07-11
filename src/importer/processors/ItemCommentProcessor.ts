@@ -1,14 +1,24 @@
-import { ItemComment } from "@prisma/client";
 import { decode } from "html-entities";
-import prisma from "../../prismaClient";
-import { Result, ok } from "../util/result";
 import { extractString, removeQuoted, removeStrikethrough } from "../util/util";
 
+export type ItemCommentData = {
+	itemId: number;
+	username: string;
+	date: any;
+	postDate: Date;
+	editDate: Date;
+	editTimestamp: number;
+	thumbs: number;
+	text: string;
+	isBin: boolean;
+	bid: number | undefined;
+};
+
 export class ItemCommentProcessor {
-	public static async update(
+	public static parseData(
 		itemId: number,
 		source: Record<string, any>
-	): Promise<Result<ItemComment, String>> {
+	): ItemCommentData {
 		const text = decode(`${source["#text"]}`); // force this to be a string, for parsing purposes.
 
 		let is_bin = false;
@@ -20,24 +30,20 @@ export class ItemCommentProcessor {
 			bid = ItemCommentProcessor.findBidNumber(stripped);
 		}
 
-		const comment = await prisma.itemComment.create({
-			data: {
-				itemId: itemId,
-				username: decode(source["@_username"]),
-				date: source["@_date"],
-				postDate: new Date(source["@_postdate"]),
-				editDate: new Date(source["@_editdate"]),
-				editTimestamp: Number(
-					Math.floor(Date.parse(source["@_editdate"]) / 1000)
-				),
-				thumbs: Number(source["@_thumbs"]),
-				text: text,
-				isBin: is_bin,
-				bid: bid,
-			},
-		});
-
-		return ok(comment);
+		return {
+			itemId: itemId,
+			username: decode(source["@_username"]),
+			date: source["@_date"],
+			postDate: new Date(source["@_postdate"]),
+			editDate: new Date(source["@_editdate"]),
+			editTimestamp: Number(
+				Math.floor(Date.parse(source["@_editdate"]) / 1000)
+			),
+			thumbs: Number(source["@_thumbs"]),
+			text: text,
+			isBin: is_bin,
+			bid: bid,
+		};
 	}
 
 	private static findBidNumber(text: string): number | undefined {

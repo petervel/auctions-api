@@ -1,75 +1,74 @@
-import { Item, ItemComment } from "@prisma/client";
 import { decode } from "html-entities";
-import prisma from "../../prismaClient";
-import { Result, ok } from "../util/result";
 import {
 	extractNumber,
 	extractString,
 	parseEndDateString,
 	removeStrikethrough,
 } from "../util/util";
-import { ItemCommentProcessor } from "./ItemCommentProcessor";
+import { ItemCommentData, ItemCommentProcessor } from "./ItemCommentProcessor";
+
+export type ListItemData = {
+	id: number;
+	listId: number;
+	objectType: any;
+	objectSubtype: any;
+	objectId: number;
+	objectName: string;
+	username: string;
+	postDate: Date;
+	editDate: Date;
+	thumbs: number;
+	imageId: number;
+	body: string;
+	deleted: boolean;
+};
 
 export class ListItemProcessor {
-	public static async update(
+	public static parseData(
 		listId: number,
 		source: Record<string, any>
-	): Promise<Result<Item, String>> {
+	): { itemData: ListItemData; commentData: ItemCommentData[] } {
 		const itemId = Number(source["@_id"]);
 
-		const derivedData = this.getDerivedData(
-			removeStrikethrough(source["body"])
+		console.log(source);
+		const commentsData = ListItemProcessor.getCommentsData(
+			itemId,
+			source["comment"]
 		);
 
-		const itemData = {
-			id: itemId,
-			listId: listId,
-			objectType: source["@_objecttype"],
-			objectSubtype: source["@_subtype"],
-			objectId: Number(source["@_objectid"]),
-			objectName: decode(source["@_objectname"]),
-			username: decode(source["@_username"]),
-			postDate: new Date(source["@_postdate"]),
-			editDate: new Date(source["@_editdate"]),
-			thumbs: Number(source["@_thumbs"]),
-			imageId: Number(source["@_imageid"]),
-			body: decode(source["body"]),
-			// comments: { connect: { id: itemId } },
-			deleted: false,
-			...derivedData,
+		const derivedData1 = this.getDerivedData(source["body"], commentsData);
+
+		const derivedData2 = this.getDerivedData(
+			removeStrikethrough(source["body"]),
+			commentsData
+		);
+
+		return {
+			itemData: {
+				id: itemId,
+				listId: listId,
+				objectType: source["@_objecttype"],
+				objectSubtype: source["@_subtype"],
+				objectId: Number(source["@_objectid"]),
+				objectName: decode(source["@_objectname"]),
+				username: decode(source["@_username"]),
+				postDate: new Date(source["@_postdate"]),
+				editDate: new Date(source["@_editdate"]),
+				thumbs: Number(source["@_thumbs"]),
+				imageId: Number(source["@_imageid"]),
+				body: decode(source["body"]),
+				deleted: false,
+				...derivedData1,
+				...derivedData2,
+			},
+			commentData: commentsData,
 		};
-
-		const item: Item = await prisma.item.upsert({
-			where: { id: itemId },
-			update: itemData,
-			create: itemData,
-		});
-
-		let comments: ItemComment[] = [];
-		if (source["comment"]) {
-			const commentsData = Array.isArray(source["comment"])
-				? source["comment"]
-				: [source["comment"]];
-			const results = await Promise.all(
-				commentsData.map(
-					async (commentData) =>
-						await ItemCommentProcessor.update(item.id, commentData)
-				)
-			);
-			for (const result of results) {
-				if (result.isOk()) {
-					comments.push(result.value);
-				} else {
-					console.log(`Error saving item comment: ${result.error}`);
-					return result;
-				}
-			}
-		}
-
-		return ok(item);
 	}
 
-	private static getDerivedData(text: string) {
+	private static getDerivedData(
+		text: string,
+		commentsData: Record<string, any>[]
+	) {
 		const item: Record<string, any> = {};
 		item.language =
 			extractString(
@@ -118,14 +117,23 @@ export class ListItemProcessor {
 		}
 
 		const editTimestamp = Date.parse(item.editDate);
-		const commentEdits = [0];
-		// item.comments.map(
-		// 	(comment: ItemComment) => comment.editTimestamp
-		// );
+		const commentEdits = commentsData.map(
+			(comment: Record<string, any>) => comment.editTimestamp
+		);
 		const latest = Math.max(editTimestamp, ...commentEdits);
 		item.editTimestamp = latest;
 
 		return item;
+	}
+
+	private static getCommentsData(itemId: number, source: String) {
+		if (!source) return [];
+
+		const commentsArray = Array.isArray(source) ? source : [source];
+
+		return commentsArray.map((commentData) =>
+			ItemCommentProcessor.parseData(itemId, commentData)
+		);
 	}
 }
 
