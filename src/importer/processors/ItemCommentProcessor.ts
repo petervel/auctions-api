@@ -1,28 +1,12 @@
 import { decode } from "html-entities";
 import { extractString, removeQuoted, removeStrikethrough } from "../util/util";
 
-export type ItemCommentData = {
-	itemId: number;
-	username: string;
-	date: any;
-	postDate: Date;
-	editDate: Date;
-	editTimestamp: number;
-	thumbs: number;
-	text: string;
-	isBin: boolean;
-	bid: number | undefined;
-};
-
 export class ItemCommentProcessor {
-	public static parseData(
-		itemId: number,
-		source: Record<string, any>
-	): ItemCommentData {
+	public static parseData(itemId: number, source: Record<string, any>) {
 		const text = decode(`${source["#text"]}`); // force this to be a string, for parsing purposes.
 
 		let is_bin = false;
-		let bid = undefined;
+		let bid = null;
 		if (text.length != 0) {
 			let stripped = removeStrikethrough(text);
 			stripped = removeQuoted(stripped);
@@ -35,6 +19,9 @@ export class ItemCommentProcessor {
 			username: decode(source["@_username"]),
 			date: source["@_date"],
 			postDate: new Date(source["@_postdate"]),
+			postTimestamp: Number(
+				Math.floor(Date.parse(source["@_postdate"]) / 1000)
+			),
 			editDate: new Date(source["@_editdate"]),
 			editTimestamp: Number(
 				Math.floor(Date.parse(source["@_editdate"]) / 1000)
@@ -46,7 +33,7 @@ export class ItemCommentProcessor {
 		};
 	}
 
-	private static findBidNumber(text: string): number | undefined {
+	private static findBidNumber(text: string): number | null {
 		const bid = ItemCommentProcessor.findBidText(text);
 		if (bid) {
 			const bidNumber = Number(bid);
@@ -55,7 +42,7 @@ export class ItemCommentProcessor {
 				return bidNumber;
 			}
 		}
-		return undefined;
+		return null;
 	}
 
 	private static findBidText(text: string): string | undefined {

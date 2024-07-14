@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 
-import express from 'express';
+import express from "express";
 const app = express();
 
 import routes from "./api";
@@ -11,11 +11,14 @@ for (const route of routes) {
 	app.use(route.path, route.object);
 }
 
-app.use("/update", (_, res) => {
-	updateData();
-	res.json({ status: 201 });
-}
-);
+app.use("/update", async (_, res) => {
+	const succesful = await updateData();
+	if (succesful) {
+		return res.json({ status: 201 });
+	} else {
+		return res.json({ status: 202 });
+	}
+});
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {

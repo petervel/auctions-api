@@ -1,7 +1,7 @@
+import { ItemComment } from "@prisma/client";
 import { decode } from "html-entities";
 import prisma from "../../prismaClient";
 import { ok } from "./../util/result";
-import { ItemCommentData } from "./ItemCommentProcessor";
 import { ListCommentProcessor } from "./ListCommentProcessor";
 import { ListItemData, ListItemProcessor } from "./ListItemProcessor";
 
@@ -20,45 +20,72 @@ export class GeekListProcessor {
 		const commentEdits = commentsData.map((comment) => comment.editTimestamp);
 		editTimestamp = Math.max(editTimestamp, ...commentEdits);
 
-		const list = await prisma.list.create({
-			data: {
-				id: listId,
-				fair: { connect: { id: fairId } },
-				title: decode(source["title"]),
-				username: decode(source["username"]),
-				postDate: new Date(source["postdate"]),
-				postTimestamp: Number(source["postdate_timestamp"]),
-				editDate: new Date(source["editdate"]),
-				editTimestamp,
-				thumbs: Number(source["thumbs"]),
-				itemCount: Number(source["numitems"]),
-				description: decode(source["description"]),
-				tosUrl: source["@_termsofuse"],
-			},
+		const listData = {
+			id: listId,
+			fair: { connect: { id: fairId } },
+			title: decode(source["title"]),
+			username: decode(source["username"]),
+			postDate: new Date(source["postdate"]),
+			postTimestamp: Number(source["postdate_timestamp"]),
+			editDate: new Date(source["editdate"]),
+			editTimestamp,
+			thumbs: Number(source["thumbs"]),
+			itemCount: Number(source["numitems"]),
+			description: decode(source["description"]),
+			tosUrl: source["@_termsofuse"],
+		};
+		const list = await prisma.list.upsert({
+			where: { id: listId },
+			create: listData,
+			update: listData,
 		});
 
-		for (let i = 0; i < commentsData.length; i += BATCH_SIZE) {
-			const batch = commentsData.slice(i, i + BATCH_SIZE);
-			console.log(`Creating list comments batch ${i}`);
-			await prisma.listComment.createMany({ data: batch });
-		}
+		const listCommentUpserts = commentsData.map((commentData) =>
+			prisma.listComment.upsert({
+				where: {
+					listId_username_postTimestamp: {
+						listId: commentData.listId,
+						username: commentData.username,
+						postTimestamp: commentData.postTimestamp,
+					},
+				},
+				create: commentData,
+				update: commentData,
+			})
+		);
+
+		await prisma.$transaction(listCommentUpserts);
 
 		const { itemsData, itemCommentsData } = GeekListProcessor.getItemsData(
 			listId,
 			source["item"]
 		);
 
-		for (let i = 0; i < itemsData.length; i += BATCH_SIZE) {
-			const batch = itemsData.slice(i, i + BATCH_SIZE);
-			console.log(`Creating item batch ${i} - ${i + BATCH_SIZE}`);
-			await prisma.item.createMany({ data: batch });
-		}
+		const itemUpserts = itemsData.map((itemData) =>
+			prisma.item.upsert({
+				where: { id: itemData.id },
+				create: itemData,
+				update: itemData,
+			})
+		);
 
-		for (let i = 0; i < itemCommentsData.length; i += BATCH_SIZE) {
-			const batch = itemCommentsData.slice(i, i + BATCH_SIZE);
-			console.log(`Creating item comments batch ${i}`);
-			await prisma.itemComment.createMany({ data: batch });
-		}
+		await prisma.$transaction(itemUpserts);
+
+		const itemCommentUpserts = itemCommentsData.map((commentData) =>
+			prisma.itemComment.upsert({
+				where: {
+					itemId_username_postTimestamp: {
+						itemId: commentData.itemId,
+						username: commentData.username,
+						postTimestamp: commentData.postTimestamp,
+					},
+				},
+				create: commentData,
+				update: commentData,
+			})
+		);
+
+		await prisma.$transaction(itemCommentUpserts);
 
 		return ok(list);
 	}
@@ -76,13 +103,13 @@ export class GeekListProcessor {
 	private static getItemsData(
 		listId: number,
 		source: String
-	): { itemsData: ListItemData[]; itemCommentsData: ItemCommentData[] } {
+	): { itemsData: ListItemData[]; itemCommentsData: ItemComment[] } {
 		if (!source) return { itemsData: [], itemCommentsData: [] };
 
 		const itemsArray = Array.isArray(source) ? source : [source];
 
 		const itemsData = [];
-		let itemCommentsData: ItemCommentData[] = [];
+		let itemCommentsData: ItemComment[] = [];
 		for (const itemArray of itemsArray) {
 			const { itemData, commentData } = ListItemProcessor.parseData(
 				listId,

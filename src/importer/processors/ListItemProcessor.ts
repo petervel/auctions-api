@@ -1,3 +1,4 @@
+import { ItemComment } from "@prisma/client";
 import { decode } from "html-entities";
 import {
 	extractNumber,
@@ -5,7 +6,7 @@ import {
 	parseEndDateString,
 	removeStrikethrough,
 } from "../util/util";
-import { ItemCommentData, ItemCommentProcessor } from "./ItemCommentProcessor";
+import { ItemCommentProcessor } from "./ItemCommentProcessor";
 
 export type ListItemData = {
 	id: number;
@@ -27,20 +28,12 @@ export class ListItemProcessor {
 	public static parseData(
 		listId: number,
 		source: Record<string, any>
-	): { itemData: ListItemData; commentData: ItemCommentData[] } {
+	): { itemData: ListItemData; commentData: ItemComment[] } {
 		const itemId = Number(source["@_id"]);
 
-		console.log(source);
 		const commentsData = ListItemProcessor.getCommentsData(
 			itemId,
 			source["comment"]
-		);
-
-		const derivedData1 = this.getDerivedData(source["body"], commentsData);
-
-		const derivedData2 = this.getDerivedData(
-			removeStrikethrough(source["body"]),
-			commentsData
 		);
 
 		return {
@@ -58,8 +51,8 @@ export class ListItemProcessor {
 				imageId: Number(source["@_imageid"]),
 				body: decode(source["body"]),
 				deleted: false,
-				...derivedData1,
-				...derivedData2,
+				...this.getDerivedData(source["body"], commentsData, false),
+				...this.getDerivedData(source["body"], commentsData),
 			},
 			commentData: commentsData,
 		};
@@ -67,8 +60,11 @@ export class ListItemProcessor {
 
 	private static getDerivedData(
 		text: string,
-		commentsData: Record<string, any>[]
+		commentsData: Record<string, any>[],
+		removeStrikeThrough: boolean = true
 	) {
+		text = removeStrikeThrough ? removeStrikethrough(text) : text;
+
 		const item: Record<string, any> = {};
 		item.language =
 			extractString(

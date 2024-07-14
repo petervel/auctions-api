@@ -7,6 +7,7 @@ export class ListCommentProcessor {
 			username: decode(source["@_username"]),
 			date: source["@_date"],
 			postDate: new Date(source["@_postdate"]),
+			postTimestamp: Math.floor(Date.parse(source["@_postdate"]) / 1000),
 			editDate: new Date(source["@_editdate"]),
 			editTimestamp: Math.floor(Date.parse(source["@_editdate"]) / 1000),
 			thumbs: Number(source["@_thumbs"]),
